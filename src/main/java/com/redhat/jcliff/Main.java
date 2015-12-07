@@ -29,6 +29,8 @@ import org.jboss.dmr.*;
  */
 public class Main {
 
+    private static final String VERSION="2.10.16";
+
     private static final HashSet<String> specialRules=new HashSet<String>();
 
     static {
@@ -54,7 +56,8 @@ public class Main {
         "  --waitport=waitport     : Wait this many seconds for the port to be opened\n"+
         "  --nobatch               : Don't use batch mode of jboss-cli\n"+
         "  --redeploy              : Redeploy all apps\n"+
-        "  --reconnect-delay=delay : Wait this many milliseconds after a :reload for the server to restart";
+        "  --reconnect-delay=delay : Wait this many milliseconds after a :reload for the server to restart\n"+
+        "  --leavetmp              : Don't erase temp files";
 
     public static void println(int indent,String s) {
         for(int i=0;i<indent;i++)
@@ -132,7 +135,9 @@ public class Main {
         boolean redeploy=false;
         boolean batch=true;
         String reconnectDelay="20000";
+        boolean leaveTmp=false;
 
+        System.out.println("Jcliff version "+VERSION);
         for(int i=0;i<args.length;i++) {
             if(args[i].startsWith("--cli="))
                 cli=args[i].substring("--cli=".length());
@@ -167,16 +172,18 @@ public class Main {
                 reload=true;
             else if(args[i].equals("--redeploy"))
                 redeploy=true;
+            else if(args[i].equals("--leavetmp"))
+                leaveTmp=true;
             else
                 files.add(args[i]);
         }
         RuleSet rules=RuleSet.getRules(new RuleLoader(ruleDir),"rules");
-
         if(!files.isEmpty()) {
             Ctx ctx=new Ctx();
             ctx.noop=noop;
             ctx.log=log;
             ctx.batch=batch;
+            ctx.leaveTmp=leaveTmp;
             ctx.reconnectDelay=Long.valueOf(reconnectDelay);
             if(logOutput!=null)
                 ctx.out=new PrintStream(new File(logOutput));
@@ -192,6 +199,7 @@ public class Main {
                 try { Thread.sleep(waitport*1000); } catch(InterruptedException f) {}
             } ;
             }
+            ctx.log("Jcliff version "+VERSION+" running");
             ctx.cli=new Cli(cli,controller,user,password,timeout,ctx);
             try {
                 List<ModelNode> nodes=new ArrayList<ModelNode>();
